@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import argparse
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -8,9 +10,23 @@ from .config import Settings
 from .rtm_api import RTMClient
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 settings = Settings.load()
 client = RTMClient(settings)
-mcp = FastMCP("remember-the-milk")
+mcp = FastMCP(
+    "remember-the-milk",
+    host=os.getenv("RTM_MCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("RTM_MCP_PORT", "8000")),
+    streamable_http_path=os.getenv("RTM_MCP_PATH", "/mcp"),
+    json_response=_env_bool("RTM_MCP_JSON_RESPONSE", False),
+    stateless_http=_env_bool("RTM_MCP_STATELESS_HTTP", False),
+)
 
 
 @mcp.tool()
@@ -421,8 +437,23 @@ def rtm_test_echo(params: dict[str, Any] | None = None) -> dict[str, Any]:
     return client.call_method("rtm.test.echo", params=params or {}, require_auth=True)
 
 
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Remember The Milk MCP server")
+    parser.add_argument(
+        "--transport",
+        choices=("stdio", "sse", "streamable-http"),
+        default=os.getenv("RTM_MCP_TRANSPORT", "stdio"),
+        help="Use streamable-http for a local or remote web MCP endpoint.",
+    )
+    return parser
+
+
 def main() -> None:
-    mcp.run()
+    args = _build_parser().parse_args()
+    mcp.run(transport=args.transport)
+
+
+app = mcp.streamable_http_app()
 
 
 if __name__ == "__main__":

@@ -36,11 +36,36 @@ The server exposes tools to:
 
 3. The local `.env` file is already present in this workspace and is ignored by Git.
 
-4. Run the MCP server:
+4. Run the MCP server over stdio:
 
    ```powershell
    py -m rtmmcp.server
    ```
+
+5. Or run it locally over HTTP MCP:
+
+   ```powershell
+   py -m rtmmcp.server --transport streamable-http
+   ```
+
+   Default local endpoint:
+
+   ```text
+   http://127.0.0.1:8000/mcp
+   ```
+
+## Local HTTP settings
+
+You can customize the local HTTP server with environment variables before launch:
+
+```powershell
+$env:RTM_MCP_HOST="127.0.0.1"
+$env:RTM_MCP_PORT="8000"
+$env:RTM_MCP_PATH="/mcp"
+py -m rtmmcp.server --transport streamable-http
+```
+
+If you want to expose it on your LAN for testing, use `0.0.0.0` as the host.
 
 ## Authentication flow
 
@@ -66,6 +91,14 @@ Example `mcpServers` entry:
   }
 }
 ```
+
+For an HTTP MCP client, point it at:
+
+```text
+http://127.0.0.1:8000/mcp
+```
+
+For ChatGPT web later, you will need to host the server on a public `https://` URL. Local `http://127.0.0.1` is useful for development, VS Code, and other local MCP clients, but not for ChatGPT web.
 
 ## Notes
 
